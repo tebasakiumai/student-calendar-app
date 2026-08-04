@@ -1,34 +1,70 @@
-import Versions from './components/Versions'
-import electronLogo from './assets/electron.svg'
+import { useState } from 'react'
+interface CalendarEvent {
+  id: string
+  title: string
+  layer: 'job-hunting' | 'school' | 'hobby'
+  dueDate: string
+  link?: string
+}
 
-function App(): React.JSX.Element {
-  const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
+const dummyEvents: CalendarEvent[] = [
+  {
+    id: '1',
+    title: 'ES提出：〇〇商事',
+    layer: 'job-hunting',
+    dueDate: '2026-08-05',
+    link: 'https://example.com'
+  },
+  {
+    id: '2',
+    title: 'レポート提出：経済学演習',
+    layer: 'school',
+    dueDate: '2026-08-06'
+  },
+  {
+    id: '3',
+    title: 'Webテスト：△△製作所',
+    layer: 'job-hunting',
+    dueDate: '2026-08-08',
+    link: 'https://example.com'
+  }
+]
+function App(): JSX.Element {
+  const [selectedLayer, setSelectedLayer] = useState<'all' | 'job-hunting' | 'school' | 'hobby'>('all')
+
+  const filteredEvents =
+    selectedLayer === 'all'
+      ? dummyEvents
+      : dummyEvents.filter((event) => event.layer === selectedLayer)
 
   return (
-    <>
-      <img alt="logo" className="logo" src={electronLogo} />
-      <div className="creator">Powered by electron-vite</div>
-      <div className="text">
-        Build an Electron app with <span className="react">React</span>
-        &nbsp;and <span className="ts">TypeScript</span>
+    <div>
+      <h1>就活カレンダー</h1>
+
+      <div>
+        <button onClick={() => setSelectedLayer('all')}>すべて</button>
+        <button onClick={() => setSelectedLayer('job-hunting')}>就活</button>
+        <button onClick={() => setSelectedLayer('school')}>学校</button>
+        <button onClick={() => setSelectedLayer('hobby')}>趣味</button>
       </div>
-      <p className="tip">
-        Please try pressing <code>F12</code> to open the devTool
-      </p>
-      <div className="actions">
-        <div className="action">
-          <a href="https://electron-vite.org/" target="_blank" rel="noreferrer">
-            Documentation
-          </a>
-        </div>
-        <div className="action">
-          <a target="_blank" rel="noreferrer" onClick={ipcHandle}>
-            Send IPC
-          </a>
-        </div>
-      </div>
-      <Versions></Versions>
-    </>
+
+      <h2>今週の締め切り</h2>
+      <ul>
+        {filteredEvents.map((event) => (
+          <li key={event.id}>
+            {event.title}（{event.dueDate}）
+            {event.link && (
+              <>
+                {' '}
+                <a href={event.link} target="_blank" rel="noreferrer">
+                  提出先
+                </a>
+              </>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }
 
