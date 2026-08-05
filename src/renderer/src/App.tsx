@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { CalendarGrid } from './CalendarGrid'
 interface CalendarEvent {
   id: string
   title: string
@@ -64,6 +65,8 @@ function App(): JSX.Element {
           </li>
         ))}
       </ul>
+      <h2>2026年8月</h2>
+      <CalendarGrid year={2026} month={7} />
     </div>
   )
 }
