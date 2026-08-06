@@ -1,10 +1,4 @@
-export interface CalendarEvent {
-  id: string
-  title: string
-  layer: 'job-hunting' | 'school' | 'hobby'
-  dueDate: string
-  link?: string
-}
+import { CalendarEvent, Layer } from './types'
 
 export function getMonthDays(year: number, month: number): Date[] {
   const firstDay = new Date(year, month, 1)
@@ -26,7 +20,6 @@ export function getMonthDays(year: number, month: number): Date[] {
   return days
 }
 
-// DateをYYYY-MM-DD形式の文字列に変換（dueDateと比較するため）
 function formatDate(date: Date): string {
   const y = date.getFullYear()
   const m = String(date.getMonth() + 1).padStart(2, '0')
@@ -34,21 +27,21 @@ function formatDate(date: Date): string {
   return `${y}-${m}-${d}`
 }
 
-const layerColors: Record<CalendarEvent['layer'], string> = {
-  'job-hunting': '#7F77DD',
-  school: '#1D9E75',
-  hobby: '#E07A4E'
+function getLayerColor(layerId: string, layers: Layer[]): string {
+  const layer = layers.find((l) => l.id === layerId)
+  return layer ? layer.color : '#ccc'
 }
 
 interface CalendarGridProps {
   year: number
-  month: number // 0始まり（0=1月）
+  month: number
   events: CalendarEvent[]
+  layers: Layer[]
 }
 
 const weekdays = ['日', '月', '火', '水', '木', '金', '土']
 
-export function CalendarGrid({ year, month, events }: CalendarGridProps): JSX.Element {
+export function CalendarGrid({ year, month, events, layers }: CalendarGridProps): JSX.Element {
   const days = getMonthDays(year, month)
 
   return (
@@ -76,6 +69,7 @@ export function CalendarGrid({ year, month, events }: CalendarGridProps): JSX.El
             style={{
               textAlign: 'center',
               padding: '8px',
+              minHeight: '60px',
               color: isCurrentMonth ? 'inherit' : '#888',
               border: '1px solid #eee'
             }}
@@ -90,7 +84,7 @@ export function CalendarGrid({ year, month, events }: CalendarGridProps): JSX.El
                     width: '6px',
                     height: '6px',
                     borderRadius: '50%',
-                    backgroundColor: layerColors[event.layer]
+                    backgroundColor: getLayerColor(event.layerId, layers)
                   }}
                 />
               ))}
