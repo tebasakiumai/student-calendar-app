@@ -1,12 +1,6 @@
 import { useState } from 'react'
-import { CalendarGrid } from './CalendarGrid'
-interface CalendarEvent {
-  id: string
-  title: string
-  layer: 'job-hunting' | 'school' | 'hobby'
-  dueDate: string
-  link?: string
-}
+import { CalendarGrid, CalendarEvent } from './CalendarGrid'
+import { isWithinInterval, addDays, startOfToday } from 'date-fns'
 
 const dummyEvents: CalendarEvent[] = [
   {
@@ -37,7 +31,13 @@ function App(): JSX.Element {
     selectedLayer === 'all'
       ? dummyEvents
       : dummyEvents.filter((event) => event.layer === selectedLayer)
+  const today = startOfToday()
+  const oneWeekLater = addDays(today, 7)
 
+  const weeklyDeadlines = filteredEvents.filter((event) => {
+    const due = new Date(event.dueDate)
+    return isWithinInterval(due, { start: today, end: oneWeekLater })
+  })
   return (
     <div>
       <h1>就活カレンダー</h1>
@@ -51,7 +51,7 @@ function App(): JSX.Element {
 
       <h2>今週の締め切り</h2>
       <ul>
-        {filteredEvents.map((event) => (
+        {weeklyDeadlines.map((event) => (
           <li key={event.id}>
             {event.title}（{event.dueDate}）
             {event.link && (
@@ -66,7 +66,7 @@ function App(): JSX.Element {
         ))}
       </ul>
       <h2>2026年8月</h2>
-      <CalendarGrid year={2026} month={7} />
+      <CalendarGrid year={2026} month={7} events={filteredEvents} />
     </div>
   )
 }
