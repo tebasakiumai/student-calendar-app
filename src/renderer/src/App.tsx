@@ -1,7 +1,7 @@
-import { useState } from 'react'
 import { isWithinInterval, addDays, startOfToday } from 'date-fns'
 import { CalendarGrid } from './CalendarGrid'
 import { CalendarEvent, Layer, defaultLayers } from './types'
+import { useState, useEffect } from 'react'
 
 const dummyEvents: CalendarEvent[] = [
   {
@@ -40,13 +40,33 @@ const colorPalette = ['#7F77DD', '#1D9E75', '#E07A4E', '#D65C7D', '#3B8FD6', '#C
 
 function App(): JSX.Element {
   const [layers, setLayers] = useState<Layer[]>(defaultLayers)
+  const [events, setEvents] = useState<CalendarEvent[]>(dummyEvents)
   const [selectedLayerId, setSelectedLayerId] = useState<string | 'all'>('all')
   const [newLayerName, setNewLayerName] = useState('')
+  const [isLoaded, setIsLoaded] = useState(false)
+
+  // ↓ここに追加
+  useEffect(() => {
+    window.api.loadData().then((saved) => {
+      if (saved) {
+        const data = saved as { layers: Layer[]; events: CalendarEvent[] }
+        setLayers(data.layers)
+        setEvents(data.events)
+      }
+      setIsLoaded(true)
+    })
+  }, [])
+  // ↑ここまで
+
+  useEffect(() => {
+    if (!isLoaded) return
+    window.api.saveData({ layers, events })
+  }, [layers, events, isLoaded])
 
   const filteredEvents =
-    selectedLayerId === 'all'
-      ? dummyEvents
-      : dummyEvents.filter((event) => event.layerId === selectedLayerId)
+  selectedLayerId === 'all'
+    ? events
+    : events.filter((event) => event.layerId === selectedLayerId)
 
   const today = startOfToday()
   const oneWeekLater = addDays(today, 7)

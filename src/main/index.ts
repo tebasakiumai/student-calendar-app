@@ -2,6 +2,7 @@ import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
+import Store from 'electron-store'
 
 function createWindow(): void {
   // Create the browser window.
@@ -72,3 +73,13 @@ app.on('window-all-closed', () => {
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
+
+const store = new Store()
+
+ipcMain.handle('load-data', () => {
+  return store.get('appData', null)
+})
+
+ipcMain.handle('save-data', (_event, data) => {
+  store.set('appData', data)
+})
