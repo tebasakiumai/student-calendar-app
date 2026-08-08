@@ -56,6 +56,7 @@ function App(): JSX.Element {
 
   const [isLayerModalOpen, setIsLayerModalOpen] = useState(false)
   const [isEventModalOpen, setIsEventModalOpen] = useState(false)
+  const [editingEventId, setEditingEventId] = useState<string | null>(null)
 
   // ↓ここに追加
   useEffect(() => {
@@ -102,35 +103,77 @@ function App(): JSX.Element {
   }
 
   function handleDateDoubleClick(dateStr: string): void {
+    setEditingEventId(null)
+    setNewTitle('')
+    setNewEventLayerId(layers[0]?.id ?? '')
+    setNewMemo('')
     setNewDueDate(dateStr)
+    setNewHasDeadline(true)
+    setNewIsAllDay(true)
+    setNewTime('')
+    setNewLink('')
+    setIsEventModalOpen(true)
+  }
+
+  function handleEditEvent(event: CalendarEvent): void {
+    setEditingEventId(event.id)
+    setNewTitle(event.title)
+    setNewEventLayerId(event.layerId)
+    setNewMemo(event.memo ?? '')
+    setNewDueDate(event.dueDate)
+    setNewHasDeadline(event.hasDeadline)
+    setNewIsAllDay(event.isAllDay)
+    setNewTime(event.time ?? '')
+    setNewLink(event.link ?? '')
     setIsEventModalOpen(true)
   }
 
   function handleAddEvent(): void {
     if (newTitle.trim() === '' || newDueDate === '') return
 
-    const newEvent: CalendarEvent = {
-      id: crypto.randomUUID(),
-      title: newTitle,
-      layerId: newEventLayerId,
-      memo: newMemo || undefined,
-      dueDate: newDueDate,
-      hasDeadline: newHasDeadline,
-      isAllDay: newIsAllDay,
-      time: newIsAllDay ? undefined : newTime,
-      link: newLink || undefined,
-      status: '未着手'
+    if (editingEventId) {
+      // 編集モード：既存の予定を更新
+      setEvents(
+        events.map((event) =>
+          event.id === editingEventId
+            ? {
+                ...event,
+                title: newTitle,
+                layerId: newEventLayerId,
+                memo: newMemo || undefined,
+                dueDate: newDueDate,
+                hasDeadline: newHasDeadline,
+                isAllDay: newIsAllDay,
+                time: newIsAllDay ? undefined : newTime,
+                link: newLink || undefined
+              }
+            : event
+        )
+      )
+    } else {
+      // 新規追加モード
+      const newEvent: CalendarEvent = {
+        id: crypto.randomUUID(),
+        title: newTitle,
+        layerId: newEventLayerId,
+        memo: newMemo || undefined,
+        dueDate: newDueDate,
+        hasDeadline: newHasDeadline,
+        isAllDay: newIsAllDay,
+        time: newIsAllDay ? undefined : newTime,
+        link: newLink || undefined,
+        status: '未着手'
+      }
+      setEvents([...events, newEvent])
     }
 
-    setEvents([...events, newEvent])
-
-    // 入力欄をリセット
     setNewTitle('')
     setNewMemo('')
     setNewDueDate('')
     setNewTime('')
     setNewLink('')
-    setIsEventModalOpen(false) 
+    setEditingEventId(null)
+    setIsEventModalOpen(false)
   }
 
   function handleDeleteEvent(id: string): void {
@@ -191,7 +234,21 @@ function App(): JSX.Element {
         <button onClick={() => setIsLayerModalOpen(true)} style={{ marginLeft: '8px' }}>
           ⚙ レイヤー管理
         </button>
-        <button onClick={() => setIsEventModalOpen(true)} style={{ marginLeft: '8px' }}>
+        <button
+          onClick={() => {
+            setEditingEventId(null)
+            setNewTitle('')
+            setNewEventLayerId(layers[0]?.id ?? '')
+            setNewMemo('')
+            setNewDueDate('')
+            setNewHasDeadline(true)
+            setNewIsAllDay(true)
+            setNewTime('')
+            setNewLink('')
+            setIsEventModalOpen(true)
+          }}
+          style={{ marginLeft: '8px' }}
+        >
           ＋ 予定を追加
         </button>
       </div>
@@ -200,13 +257,13 @@ function App(): JSX.Element {
       <ul>
         {weeklyDeadlines.map((event) => (
           <li key={event.id}>
-            {event.title}（{event.dueDate}
-            {event.isAllDay ? '' : ` ${event.time}`}）
+            <span onClick={() => handleEditEvent(event)} style={{ cursor: 'pointer' }}>
+              {event.title}（{event.dueDate}
+              {event.isAllDay ? '' : ` ${event.time}`}）
+            </span>
             <select
               value={event.status}
-              onChange={(e) =>
-                handleStatusChange(event.id, e.target.value as CalendarEvent['status'])
-              }
+              onChange={(e) => handleStatusChange(event.id, e.target.value as CalendarEvent['status'])}
             >
               <option value="未着手">未着手</option>
               <option value="進行中">進行中</option>
@@ -232,6 +289,7 @@ function App(): JSX.Element {
         events={filteredEvents}
         layers={layers}
         onDateDoubleClick={handleDateDoubleClick}
+        onEventClick={handleEditEvent}
       />
       {isEventModalOpen && (
         <div
@@ -258,7 +316,7 @@ function App(): JSX.Element {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h2>予定を追加</h2>
+            <h2>{editingEventId ? '予定を編集' : '予定を追加'}</h2>
 
             <div>
               <input
@@ -326,7 +384,7 @@ function App(): JSX.Element {
             </div>
 
             <div style={{ marginTop: '12px' }}>
-              <button onClick={handleAddEvent}>追加する</button>
+              <button onClick={handleAddEvent}>{editingEventId ? '更新する' : '追加する'}</button>
               <button onClick={() => setIsEventModalOpen(false)}>キャンセル</button>
             </div>
           </div>

@@ -38,6 +38,7 @@ interface CalendarGridProps {
   events: CalendarEvent[]
   layers: Layer[]
   onDateDoubleClick: (dateStr: string) => void
+  onEventClick: (event: CalendarEvent) => void
 }
 
 const weekdays = ['日', '月', '火', '水', '木', '金', '土']
@@ -47,7 +48,8 @@ export function CalendarGrid({
   month,
   events,
   layers,
-  onDateDoubleClick
+  onDateDoubleClick,
+  onEventClick
 }: CalendarGridProps): JSX.Element {
   const days = getMonthDays(year, month)
 
@@ -83,22 +85,34 @@ export function CalendarGrid({
               cursor: 'pointer'
             }}
           >
-            <div>{date.getDate()}</div>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '2px' }}>
-              {eventsOnThisDay.map((event) => (
-                <span
-                  key={event.id}
-                  title={event.title}
-                  style={{
-                    width: '6px',
-                    height: '6px',
-                    borderRadius: '50%',
-                    backgroundColor: getLayerColor(event.layerId, layers)
-                  }}
-                />
-              ))}
-            </div>
+          <div>{date.getDate()}</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '4px' }}>
+            {eventsOnThisDay.map((event) => (
+              <div
+                key={event.id}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onEventClick(event)
+                }}
+                title={event.title}
+                style={{
+                  backgroundColor: getLayerColor(event.layerId, layers),
+                  color: 'white',
+                  fontSize: '10px',
+                  padding: '2px 4px',
+                  borderRadius: '3px',
+                  textAlign: 'left',
+                  overflow: 'hidden',
+                  whiteSpace: 'nowrap',
+                  textOverflow: 'ellipsis',
+                  cursor: 'pointer'
+                }}
+              >
+                {event.title}
+              </div>
+            ))}
           </div>
+        </div>
         )
       })}
     </div>
