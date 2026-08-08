@@ -37,11 +37,18 @@ interface CalendarGridProps {
   month: number
   events: CalendarEvent[]
   layers: Layer[]
+  onDateDoubleClick: (dateStr: string) => void
 }
 
 const weekdays = ['日', '月', '火', '水', '木', '金', '土']
 
-export function CalendarGrid({ year, month, events, layers }: CalendarGridProps): JSX.Element {
+export function CalendarGrid({
+  year,
+  month,
+  events,
+  layers,
+  onDateDoubleClick
+}: CalendarGridProps): JSX.Element {
   const days = getMonthDays(year, month)
 
   return (
@@ -66,12 +73,14 @@ export function CalendarGrid({ year, month, events, layers }: CalendarGridProps)
         return (
           <div
             key={dateStr}
+            onDoubleClick={() => onDateDoubleClick(dateStr)}
             style={{
               textAlign: 'center',
               padding: '8px',
               minHeight: '60px',
               color: isCurrentMonth ? 'inherit' : '#888',
-              border: '1px solid #eee'
+              border: '1px solid #eee',
+              cursor: 'pointer'
             }}
           >
             <div>{date.getDate()}</div>
