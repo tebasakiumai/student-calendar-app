@@ -1,4 +1,4 @@
-import { isWithinInterval, addDays, startOfToday } from 'date-fns'
+import { isWithinInterval, addDays, startOfToday, differenceInCalendarDays } from 'date-fns'
 import { CalendarGrid } from './CalendarGrid'
 import { CalendarEvent, Layer, defaultLayers } from './types'
 import { useState, useEffect } from 'react'
@@ -215,7 +215,7 @@ function App(): JSX.Element {
     <div
       style={{
         display: 'grid',
-        gridTemplateColumns: '260px 1fr 300px',
+        gridTemplateColumns: selectedEventId ? '260px 1fr 300px' : '260px 1fr 0px',
         gridTemplateRows: '60px 1fr',
         gridTemplateAreas: `
           "header tabs addbtn"
@@ -224,35 +224,36 @@ function App(): JSX.Element {
         height: '100vh',
         gap: '8px',
         padding: '8px',
-        boxSizing: 'border-box'
+        boxSizing: 'border-box',
+        transition: 'grid-template-columns 0.25s ease'
       }}
     >
       <div style={{ gridArea: 'header', display: 'flex', alignItems: 'center' }}>
-        <h1 style={{ fontSize: '18px', margin: 0 }}>就活カレンダー</h1>
+        <h1 className="app-header">就活カレンダー</h1>
       </div>
 
-      <div style={{ gridArea: 'tabs', display: 'flex', alignItems: 'center', gap: '4px' }}>
-        <button onClick={() => setSelectedLayerId('all')}>すべて</button>
+      <div style={{ gridArea: 'tabs' }} className="tab-bar">
+        <button className="layer-tab is-all" onClick={() => setSelectedLayerId('all')}>
+          すべて
+        </button>
         {layers.map((layer) => (
           <button
             key={layer.id}
+            className="layer-tab"
             onClick={() => setSelectedLayerId(layer.id)}
-            style={{
-              backgroundColor: layer.color,
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              padding: '4px 10px'
-            }}
+            style={{ backgroundColor: layer.color }}
           >
             {layer.name}
           </button>
         ))}
-        <button onClick={() => setIsLayerModalOpen(true)}>⚙</button>
+        <button className="icon-btn is-square" onClick={() => setIsLayerModalOpen(true)}>
+          ⚙
+        </button>
       </div>
 
       <div style={{ gridArea: 'addbtn', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
         <button
+          className="primary-btn"
           onClick={() => {
             setEditingEventId(null)
             setNewTitle('')
@@ -271,27 +272,36 @@ function App(): JSX.Element {
       </div>
 
       <div style={{ gridArea: 'deadlines', overflowY: 'auto' }}>
-        <h2 style={{ fontSize: '14px' }}>今週の締め切り</h2>
-        <ul style={{ listStyle: 'none', padding: 0 }}>
-          {weeklyDeadlines.map((event) => (
-            <li
-              key={event.id}
-              onClick={() => setSelectedEventId(event.id)}
-              style={{
-                borderLeft: `4px solid ${layers.find((l) => l.id === event.layerId)?.color ?? '#ccc'}`,
-                padding: '6px 8px',
-                marginBottom: '6px',
-                cursor: 'pointer',
-                backgroundColor: selectedEventId === event.id ? '#eee' : 'transparent'
-              }}
-            >
-              <div style={{ fontSize: '13px', fontWeight: 500 }}>{event.title}</div>
-              <div style={{ fontSize: '11px', color: '#888' }}>
-                {event.dueDate}
-                {event.isAllDay ? '' : ` ${event.time}`}
-              </div>
-            </li>
-          ))}
+        <p className="panel-title">今週の締め切り</p>
+        <ul>
+          {weeklyDeadlines.map((event) => {
+            const daysLeft = differenceInCalendarDays(new Date(event.dueDate), startOfToday())
+            const isUrgent = daysLeft <= 2
+            const countdownText =
+              daysLeft < 0 ? '期限超過' : daysLeft === 0 ? '今日' : `あと${daysLeft}日`
+
+            return (
+              <li
+                key={event.id}
+                onClick={() => setSelectedEventId(event.id)}
+                className={`deadline-card${selectedEventId === event.id ? ' is-selected' : ''}`}
+                style={{
+                  borderLeftColor: layers.find((l) => l.id === event.layerId)?.color ?? '#ccc'
+                }}
+              >
+                <div className="deadline-title">{event.title}</div>
+                <div className="deadline-meta">
+                  <span className="deadline-date">
+                    {event.dueDate}
+                    {event.isAllDay ? '' : ` ${event.time}`}
+                  </span>
+                  <span className={`deadline-countdown${isUrgent ? ' is-urgent' : ''}`}>
+                    {countdownText}
+                  </span>
+                </div>
+              </li>
+            )
+          })}
         </ul>
       </div>
 
@@ -306,42 +316,37 @@ function App(): JSX.Element {
         />
       </div>
 
-      <div style={{ gridArea: 'detail', overflowY: 'auto', borderLeft: '1px solid #ccc', paddingLeft: '8px' }}>
+      <div
+        className="detail-panel"
+        style={{
+          gridArea: 'detail',
+          borderLeft: selectedEventId ? '1px solid var(--line)' : 'none',
+          paddingLeft: selectedEventId ? '8px' : 0
+        }}
+      >
         {(() => {
           const selectedEvent = events.find((event) => event.id === selectedEventId)
 
           if (!selectedEvent) {
-            return <p style={{ color: '#888', fontSize: '13px' }}>予定を選択してください</p>
+            return <p style={{ color: 'var(--ink-sub)', fontSize: '13px' }}>予定を選択してください</p>
           }
 
           const layer = layers.find((l) => l.id === selectedEvent.layerId)
 
           return (
             <div>
-              <div
-                style={{
-                  display: 'inline-block',
-                  backgroundColor: layer?.color ?? '#ccc',
-                  color: 'white',
-                  fontSize: '11px',
-                  padding: '2px 8px',
-                  borderRadius: '10px',
-                  marginBottom: '8px'
-                }}
-              >
+              <div className="detail-badge" style={{ backgroundColor: layer?.color ?? '#ccc' }}>
                 {layer?.name ?? '不明'}
               </div>
 
-              <h3 style={{ margin: '4px 0' }}>{selectedEvent.title}</h3>
+              <h3 className="detail-title">{selectedEvent.title}</h3>
 
-              <p style={{ fontSize: '13px', color: '#555' }}>
+              <p className="detail-meta">
                 {selectedEvent.hasDeadline ? '期限' : '日付'}: {selectedEvent.dueDate}
                 {selectedEvent.isAllDay ? '（終日）' : ` ${selectedEvent.time}`}
               </p>
 
-              {selectedEvent.memo && (
-                <p style={{ fontSize: '13px', whiteSpace: 'pre-wrap' }}>{selectedEvent.memo}</p>
-              )}
+              {selectedEvent.memo && <p className="detail-memo">{selectedEvent.memo}</p>}
 
               {selectedEvent.link && (
                 <p>
@@ -365,9 +370,12 @@ function App(): JSX.Element {
                 </select>
               </div>
 
-              <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-                <button onClick={() => handleEditEvent(selectedEvent)}>編集</button>
+              <div className="detail-actions">
+                <button className="icon-btn" onClick={() => handleEditEvent(selectedEvent)}>
+                  編集
+                </button>
                 <button
+                  className="icon-btn"
                   onClick={() => {
                     handleDeleteEvent(selectedEvent.id)
                     setSelectedEventId(null)
@@ -382,178 +390,146 @@ function App(): JSX.Element {
       </div>
 
       {isEventModalOpen && (
-      <div
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center'
-        }}
-        onClick={() => setIsEventModalOpen(false)}
-      >
-        <div
-          style={{
-            backgroundColor: 'white',
-            color: 'black',
-            padding: '20px',
-            borderRadius: '8px',
-            width: '400px'
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <h2>{editingEventId ? '予定を編集' : '予定を追加'}</h2>
+        <div className="modal-overlay" onClick={() => setIsEventModalOpen(false)}>
+          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+            <h2>{editingEventId ? '予定を編集' : '予定を追加'}</h2>
 
-          <div>
-            <input
-              type="text"
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-              placeholder="タイトル"
-            />
-          </div>
-
-          <div>
-            <select value={newEventLayerId} onChange={(e) => setNewEventLayerId(e.target.value)}>
-              {layers.map((layer) => (
-                <option key={layer.id} value={layer.id}>
-                  {layer.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <textarea
-              value={newMemo}
-              onChange={(e) => setNewMemo(e.target.value)}
-              placeholder="メモ"
-            />
-          </div>
-
-          <div>
-            <label>
-              <input
-                type="checkbox"
-                checked={newHasDeadline}
-                onChange={(e) => setNewHasDeadline(e.target.checked)}
-              />
-              期限付き
-            </label>
-          </div>
-
-          <div>
-            <input type="date" value={newDueDate} onChange={(e) => setNewDueDate(e.target.value)} />
-          </div>
-
-          <div>
-            <label>
-              <input
-                type="checkbox"
-                checked={newIsAllDay}
-                onChange={(e) => setNewIsAllDay(e.target.checked)}
-              />
-              終日
-            </label>
-            {!newIsAllDay && (
-              <input type="time" value={newTime} onChange={(e) => setNewTime(e.target.value)} />
-            )}
-          </div>
-
-          <div>
-            <input
-              type="text"
-              value={newLink}
-              onChange={(e) => setNewLink(e.target.value)}
-              placeholder="提出先リンク"
-            />
-          </div>
-
-          <div style={{ marginTop: '12px' }}>
-            <button onClick={handleAddEvent}>{editingEventId ? '更新する' : '追加する'}</button>
-            <button onClick={() => setIsEventModalOpen(false)}>キャンセル</button>
-          </div>
-        </div>
-      </div>
-    )}
-
-    {isLayerModalOpen && (
-      <div
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center'
-        }}
-        onClick={() => setIsLayerModalOpen(false)}
-      >
-        <div
-          style={{
-            backgroundColor: 'white',
-            color: 'black',
-            padding: '20px',
-            borderRadius: '8px',
-            width: '400px'
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <h2>レイヤー管理</h2>
-
-          {layers.map((layer) => (
-            <div
-              key={layer.id}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}
-            >
+            <div>
               <input
                 type="text"
-                value={layer.name}
-                onChange={(e) => handleRenameLayer(layer.id, e.target.value)}
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                placeholder="タイトル"
               />
-              {colorPalette.map((color) => (
-                <button
-                  key={color}
-                  onClick={() => handleChangeLayerColor(layer.id, color)}
-                  style={{
-                    width: '18px',
-                    height: '18px',
-                    borderRadius: '50%',
-                    backgroundColor: color,
-                    border: layer.color === color ? '2px solid black' : 'none',
-                    padding: 0
-                  }}
-                />
-              ))}
-              <button onClick={() => handleDeleteLayer(layer.id)}>削除</button>
             </div>
-          ))}
 
-          <hr />
+            <div>
+              <select value={newEventLayerId} onChange={(e) => setNewEventLayerId(e.target.value)}>
+                {layers.map((layer) => (
+                  <option key={layer.id} value={layer.id}>
+                    {layer.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          <div>
-            <input
-              type="text"
-              value={newLayerName}
-              onChange={(e) => setNewLayerName(e.target.value)}
-              placeholder="新しいレイヤー名"
-            />
-            <button onClick={handleAddLayer}>＋追加</button>
+            <div>
+              <textarea
+                value={newMemo}
+                onChange={(e) => setNewMemo(e.target.value)}
+                placeholder="メモ"
+              />
+            </div>
+
+            <div>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={newHasDeadline}
+                  onChange={(e) => setNewHasDeadline(e.target.checked)}
+                />
+                期限付き
+              </label>
+            </div>
+
+            <div>
+              <input type="date" value={newDueDate} onChange={(e) => setNewDueDate(e.target.value)} />
+            </div>
+
+            <div>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={newIsAllDay}
+                  onChange={(e) => setNewIsAllDay(e.target.checked)}
+                />
+                終日
+              </label>
+              {!newIsAllDay && (
+                <input type="time" value={newTime} onChange={(e) => setNewTime(e.target.value)} />
+              )}
+            </div>
+
+            <div>
+              <input
+                type="text"
+                value={newLink}
+                onChange={(e) => setNewLink(e.target.value)}
+                placeholder="提出先リンク"
+              />
+            </div>
+
+            <div style={{ marginTop: '12px' }}>
+              <button className="primary-btn" onClick={handleAddEvent}>
+                {editingEventId ? '更新する' : '追加する'}
+              </button>
+              <button className="icon-btn" onClick={() => setIsEventModalOpen(false)}>
+                キャンセル
+              </button>
+            </div>
           </div>
-
-          <button onClick={() => setIsLayerModalOpen(false)} style={{ marginTop: '12px' }}>
-            閉じる
-          </button>
         </div>
-      </div>
-    )}
+      )}
+
+      {isLayerModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsLayerModalOpen(false)}>
+          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+            <h2>レイヤー管理</h2>
+
+            {layers.map((layer) => (
+              <div
+                key={layer.id}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}
+              >
+                <input
+                  type="text"
+                  value={layer.name}
+                  onChange={(e) => handleRenameLayer(layer.id, e.target.value)}
+                />
+                {colorPalette.map((color) => (
+                  <button
+                    key={color}
+                    onClick={() => handleChangeLayerColor(layer.id, color)}
+                    style={{
+                      width: '18px',
+                      height: '18px',
+                      borderRadius: '50%',
+                      backgroundColor: color,
+                      border: layer.color === color ? '2px solid var(--ink)' : 'none',
+                      padding: 0
+                    }}
+                  />
+                ))}
+                <button className="icon-btn" onClick={() => handleDeleteLayer(layer.id)}>
+                  削除
+                </button>
+              </div>
+            ))}
+
+            <hr style={{ border: 'none', borderTop: '1px solid var(--line)', margin: '12px 0' }} />
+
+            <div>
+              <input
+                type="text"
+                value={newLayerName}
+                onChange={(e) => setNewLayerName(e.target.value)}
+                placeholder="新しいレイヤー名"
+              />
+              <button className="primary-btn" onClick={handleAddLayer}>
+                ＋追加
+              </button>
+            </div>
+
+            <button
+              className="icon-btn"
+              onClick={() => setIsLayerModalOpen(false)}
+              style={{ marginTop: '12px' }}
+            >
+              閉じる
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

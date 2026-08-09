@@ -1,0 +1,252 @@
+.app-header {
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+  font-size: 17px;
+  letter-spacing: 0.02em;
+}
+
+.tab-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.layer-tab {
+  border: none;
+  border-radius: 14px;
+  padding: 5px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--white);
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.layer-tab.is-all {
+  background: var(--ink-sub);
+}
+
+.layer-tab:hover {
+  opacity: 0.85;
+}
+
+.icon-btn {
+  border: 1px solid var(--line);
+  background: var(--white);
+  border-radius: 8px;
+  padding: 0 12px;
+  height: 32px;
+  cursor: pointer;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.icon-btn.is-square {
+  width: 32px;
+  padding: 0;
+}
+
+.icon-btn:hover {
+  background: var(--paper-soft);
+}
+
+.primary-btn {
+  background: var(--indigo);
+  color: var(--white);
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.primary-btn:hover {
+  opacity: 0.9;
+}
+
+.panel-title {
+  font-size: 12px;
+  color: var(--ink-sub);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  margin-bottom: 8px;
+}
+
+.deadline-card {
+  background: var(--white);
+  border-left: 3px solid var(--ink-sub);
+  border-radius: 0 8px 8px 0;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.deadline-card:hover {
+  background: var(--paper-soft);
+}
+
+.deadline-card.is-selected {
+  background: var(--paper-soft);
+}
+
+.deadline-title {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.deadline-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-top: 3px;
+}
+
+.deadline-date {
+  font-size: 11px;
+  color: var(--ink-sub);
+  font-family: var(--font-mono);
+}
+
+.deadline-countdown {
+  font-size: 11px;
+  font-weight: 500;
+  font-family: var(--font-mono);
+  color: var(--indigo);
+}
+
+.deadline-countdown.is-urgent {
+  color: var(--alert);
+}
+
+.calendar-weekday {
+  text-align: center;
+  color: var(--ink-sub);
+  font-size: 11px;
+  font-family: var(--font-mono);
+  padding: 4px 0;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  border-top: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+}
+
+.calendar-cell {
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 4px;
+  min-height: 76px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  cursor: pointer;
+}
+
+.calendar-cell:hover {
+  background: var(--paper-soft);
+}
+
+.calendar-cell.is-other-month {
+  color: var(--ink-sub);
+  opacity: 0.5;
+}
+
+.calendar-date {
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.event-chip {
+  color: var(--white);
+  font-size: 10px;
+  padding: 2px 5px;
+  border-radius: 3px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.detail-panel {
+  overflow: hidden;
+}
+
+.detail-badge {
+  display: inline-block;
+  color: var(--white);
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 10px;
+  margin-bottom: 8px;
+}
+
+.detail-title {
+  margin: 4px 0 8px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.detail-meta {
+  font-size: 13px;
+  color: var(--ink-sub);
+  font-family: var(--font-mono);
+  margin-bottom: 8px;
+}
+
+.detail-memo {
+  font-size: 13px;
+  white-space: pre-wrap;
+  margin-bottom: 8px;
+}
+
+.detail-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(38, 38, 36, 0.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-box {
+  background: var(--white);
+  padding: 20px;
+  border-radius: 12px;
+  width: 400px;
+}
+
+.modal-box h2 {
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 12px;
+}
+
+.modal-box > div {
+  margin-bottom: 10px;
+}
+
+.modal-box input[type='text'],
+.modal-box input[type='date'],
+.modal-box input[type='time'],
+.modal-box select,
+.modal-box textarea {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+}

@@ -54,67 +54,46 @@ export function CalendarGrid({
   const days = getMonthDays(year, month)
 
   return (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(7, 1fr)',
-        gap: '4px'
-      }}
-    >
-      {weekdays.map((day) => (
-        <div key={day} style={{ textAlign: 'center', fontWeight: 'bold' }}>
-          {day}
-        </div>
-      ))}
-
-      {days.map((date) => {
-        const isCurrentMonth = date.getMonth() === month
-        const dateStr = formatDate(date)
-        const eventsOnThisDay = events.filter((event) => event.dueDate === dateStr)
-
-        return (
-          <div
-            key={dateStr}
-            onDoubleClick={() => onDateDoubleClick(dateStr)}
-            style={{
-              textAlign: 'center',
-              padding: '8px',
-              minHeight: '60px',
-              color: isCurrentMonth ? 'inherit' : '#888',
-              border: '1px solid #eee',
-              cursor: 'pointer'
-            }}
-          >
-          <div>{date.getDate()}</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '4px' }}>
-            {eventsOnThisDay.map((event) => (
-              <div
-                key={event.id}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onEventClick(event)
-                }}
-                title={event.title}
-                style={{
-                  backgroundColor: getLayerColor(event.layerId, layers),
-                  color: 'white',
-                  fontSize: '10px',
-                  padding: '2px 4px',
-                  borderRadius: '3px',
-                  textAlign: 'left',
-                  overflow: 'hidden',
-                  whiteSpace: 'nowrap',
-                  textOverflow: 'ellipsis',
-                  cursor: 'pointer'
-                }}
-              >
-                {event.title}
-              </div>
-            ))}
+    <div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
+        {weekdays.map((day) => (
+          <div key={day} className="calendar-weekday">
+            {day}
           </div>
-        </div>
-        )
-      })}
+        ))}
+      </div>
+
+      <div className="calendar-grid">
+        {days.map((date) => {
+          const isCurrentMonth = date.getMonth() === month
+          const dateStr = formatDate(date)
+          const eventsOnThisDay = events.filter((event) => event.dueDate === dateStr)
+
+          return (
+            <div
+              key={dateStr}
+              onDoubleClick={() => onDateDoubleClick(dateStr)}
+              className={`calendar-cell${isCurrentMonth ? '' : ' is-other-month'}`}
+            >
+              <span className="calendar-date">{date.getDate()}</span>
+              {eventsOnThisDay.map((event) => (
+                <div
+                  key={event.id}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onEventClick(event)
+                  }}
+                  title={event.title}
+                  className="event-chip"
+                  style={{ backgroundColor: getLayerColor(event.layerId, layers) }}
+                >
+                  {event.title}
+                </div>
+              ))}
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
