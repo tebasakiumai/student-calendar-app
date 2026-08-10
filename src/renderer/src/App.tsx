@@ -2,6 +2,7 @@ import { isWithinInterval, addDays, startOfToday, differenceInCalendarDays } fro
 import { CalendarGrid } from './CalendarGrid'
 import { CalendarEvent, Layer, defaultLayers } from './types'
 import { useState, useEffect } from 'react'
+import { DayView } from './DayView'
 
 const dummyEvents: CalendarEvent[] = [
   {
@@ -59,6 +60,7 @@ function App(): JSX.Element {
   const [editingEventId, setEditingEventId] = useState<string | null>(null)
 
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
+  const [selectedDayDate, setSelectedDayDate] = useState<string | null>(null)
 
   // ↓ここに追加
   useEffect(() => {
@@ -211,47 +213,57 @@ function App(): JSX.Element {
     setLayers(layers.map((layer) => (layer.id === id ? { ...layer, color } : layer)))
   }
 
+  function handleDateClick(dateStr: string): void {
+    setSelectedDayDate(dateStr)
+
+    const hasEventsOnThisDay = events.some((event) => event.dueDate === dateStr)
+    if (!hasEventsOnThisDay) {
+      setSelectedEventId(null)
+    }
+  }
+
   return (
     <div
       style={{
         display: 'grid',
         gridTemplateColumns: selectedEventId ? '260px 1fr 300px' : '260px 1fr 0px',
-        gridTemplateRows: '60px 1fr',
+        gridTemplateRows: `auto 1fr ${selectedDayDate ? '260px' : '0px'}`,
         gridTemplateAreas: `
-          "header tabs addbtn"
+          "header tabs tabs"
           "deadlines calendar detail"
+          "deadlines dayview detail"
         `,
         height: '100vh',
         gap: '8px',
         padding: '8px',
         boxSizing: 'border-box',
-        transition: 'grid-template-columns 0.25s ease'
+        transition: 'grid-template-columns 0.25s ease, grid-template-rows 0.25s ease'
       }}
     >
       <div style={{ gridArea: 'header', display: 'flex', alignItems: 'center' }}>
         <h1 className="app-header">就活カレンダー</h1>
       </div>
 
-      <div style={{ gridArea: 'tabs' }} className="tab-bar">
-        <button className="layer-tab is-all" onClick={() => setSelectedLayerId('all')}>
-          すべて
-        </button>
-        {layers.map((layer) => (
-          <button
-            key={layer.id}
-            className="layer-tab"
-            onClick={() => setSelectedLayerId(layer.id)}
-            style={{ backgroundColor: layer.color }}
-          >
-            {layer.name}
+      <div style={{ gridArea: 'tabs', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div className="tab-bar">
+          <button className="layer-tab is-all" onClick={() => setSelectedLayerId('all')}>
+            すべて
           </button>
-        ))}
-        <button className="icon-btn is-square" onClick={() => setIsLayerModalOpen(true)}>
-          ⚙
-        </button>
-      </div>
+          {layers.map((layer) => (
+            <button
+              key={layer.id}
+              className="layer-tab"
+              onClick={() => setSelectedLayerId(layer.id)}
+              style={{ backgroundColor: layer.color }}
+            >
+              {layer.name}
+            </button>
+          ))}
+          <button className="icon-btn is-square" onClick={() => setIsLayerModalOpen(true)}>
+            ⚙
+          </button>
+        </div>
 
-      <div style={{ gridArea: 'addbtn', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
         <button
           className="primary-btn"
           onClick={() => {
@@ -312,10 +324,25 @@ function App(): JSX.Element {
           events={filteredEvents}
           layers={layers}
           onDateDoubleClick={handleDateDoubleClick}
+          onDateClick={handleDateClick}
           onEventClick={(event) => setSelectedEventId(event.id)}
         />
       </div>
-
+      <div
+        style={{
+          gridArea: 'dayview',
+          overflow: 'hidden',
+          borderTop: selectedDayDate ? '1px solid var(--line)' : 'none',
+          paddingTop: selectedDayDate ? '8px' : 0
+        }}
+      >
+        <DayView
+          date={selectedDayDate}
+          events={filteredEvents}
+          layers={layers}
+          onEventClick={(event) => setSelectedEventId(event.id)}
+        />
+      </div>
       <div
         className="detail-panel"
         style={{

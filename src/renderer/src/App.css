@@ -250,3 +250,103 @@
   border-radius: 6px;
   background: var(--paper);
 }
+
+.dayview-empty {
+  font-size: 13px;
+  color: var(--ink-sub);
+  padding: 12px 0;
+}
+
+.dayview {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.dayview-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.dayview-date {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-sub);
+}
+
+.dayview-timeline {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.dayview-scroll-viewport {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  cursor: grab;
+  user-select: none;
+}
+
+.dayview-scroll-viewport:active {
+  cursor: grabbing;
+}
+
+.dayview-scroll-inner {
+  width: 200%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.dayview-hourline-row {
+  position: relative;
+  height: 16px;
+  margin: 0 10px;
+}
+
+.dayview-hourmark {
+  position: absolute;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-sub);
+}
+
+.dayview-track {
+  position: relative;
+  flex: 1;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  margin: 0 10px;
+}
+
+.dayview-gridline {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--line);
+}
+
+.dayview-event {
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  color: var(--white);
+  font-size: 11px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
