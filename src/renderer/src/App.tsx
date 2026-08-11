@@ -4,38 +4,7 @@ import { CalendarEvent, Layer, defaultLayers } from './types'
 import React, { useState, useEffect } from 'react'
 import { DayView } from './DayView'
 
-const dummyEvents: CalendarEvent[] = [
-  {
-    id: '1',
-    title: 'ES提出：〇〇商事',
-    layerId: 'l1',
-    dueDate: '2026-08-07',
-    hasDeadline: true,
-    isAllDay: true,
-    link: 'https://example.com',
-    status: '未着手'
-  },
-  {
-    id: '2',
-    title: 'レポート提出：経済学演習',
-    layerId: 'l2',
-    dueDate: '2026-08-08',
-    hasDeadline: true,
-    isAllDay: false,
-    time: '18:00',
-    status: '進行中'
-  },
-  {
-    id: '3',
-    title: 'Webテスト：△△製作所',
-    layerId: 'l1',
-    dueDate: '2026-08-10',
-    hasDeadline: true,
-    isAllDay: true,
-    link: 'https://example.com',
-    status: '未着手'
-  }
-]
+const dummyEvents: CalendarEvent[] = []
 
 const colorPalette = ['#7F77DD', '#1D9E75', '#E07A4E', '#D65C7D', '#3B8FD6', '#C9A227']
 
