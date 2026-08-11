@@ -1,7 +1,7 @@
 import { isWithinInterval, addDays, startOfToday, differenceInCalendarDays } from 'date-fns'
 import { CalendarGrid } from './CalendarGrid'
 import { CalendarEvent, Layer, defaultLayers } from './types'
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { DayView } from './DayView'
 
 const dummyEvents: CalendarEvent[] = [
@@ -39,7 +39,7 @@ const dummyEvents: CalendarEvent[] = [
 
 const colorPalette = ['#7F77DD', '#1D9E75', '#E07A4E', '#D65C7D', '#3B8FD6', '#C9A227']
 
-function App(): JSX.Element {
+function App(): React.ReactElement {
   const [layers, setLayers] = useState<Layer[]>(defaultLayers)
   const [events, setEvents] = useState<CalendarEvent[]>(dummyEvents)
   const [selectedLayerId, setSelectedLayerId] = useState<string | 'all'>('all')

@@ -1,4 +1,5 @@
 import { CalendarEvent, Layer } from './types'
+import React from 'react'
 
 export function getMonthDays(year: number, month: number): Date[] {
   const firstDay = new Date(year, month, 1)
@@ -52,7 +53,7 @@ export function CalendarGrid({
   onDateDoubleClick,
   onDateClick,
   onEventClick
-}: CalendarGridProps): JSX.Element {
+}: CalendarGridProps): React.ReactElement {
   const days = getMonthDays(year, month)
 
   return (

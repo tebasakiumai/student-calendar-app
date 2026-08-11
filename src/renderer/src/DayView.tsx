@@ -1,5 +1,5 @@
-import { useLayoutEffect, useRef } from 'react'
 import { CalendarEvent, Layer } from './types'
+import React, { useLayoutEffect, useRef } from 'react'
 
 interface DayViewProps {
   date: string | null
@@ -16,7 +16,7 @@ function getLayerColor(layerId: string, layers: Layer[]): string {
   return layer ? layer.color : '#ccc'
 }
 
-export function DayView({ date, events, layers, onEventClick }: DayViewProps): JSX.Element {
+export function DayView({ date, events, layers, onEventClick }: DayViewProps): React.ReactElement {
   const viewportRef = useRef<HTMLDivElement>(null)
   const isDragging = useRef(false)
   const dragStartX = useRef(0)
