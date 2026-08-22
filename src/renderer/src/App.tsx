@@ -1,4 +1,11 @@
-import { isWithinInterval, addDays, startOfToday, differenceInCalendarDays } from 'date-fns'
+import {
+  isWithinInterval,
+  addDays,
+  startOfToday,
+  differenceInCalendarDays,
+  eachDayOfInterval,
+  format
+} from 'date-fns'
 import { CalendarGrid } from './CalendarGrid'
 import { CalendarEvent, Layer, defaultLayers } from './types'
 import React, { useState, useEffect } from 'react'
@@ -23,6 +30,11 @@ function App(): React.ReactElement {
   const [newIsAllDay, setNewIsAllDay] = useState(true)
   const [newTime, setNewTime] = useState('')
   const [newLink, setNewLink] = useState('')
+
+  const [bulkMode, setBulkMode] = useState<'single' | 'range' | 'multiple' | 'recurring'>('single')
+  const [newDueDateEnd, setNewDueDateEnd] = useState('')
+  const [multipleDates, setMultipleDates] = useState<string[]>([])
+  const [recurringWeekdays, setRecurringWeekdays] = useState<number[]>([])
 
   const [isLayerModalOpen, setIsLayerModalOpen] = useState(false)
   const [isEventModalOpen, setIsEventModalOpen] = useState(false)
@@ -86,6 +98,10 @@ function App(): React.ReactElement {
     setNewTime('')
     setNewLink('')
     setIsEventModalOpen(true)
+    setBulkMode('single')
+    setNewDueDateEnd('')
+    setMultipleDates([])
+    setRecurringWeekdays([])
   }
 
   function handleEditEvent(event: CalendarEvent): void {
@@ -99,12 +115,34 @@ function App(): React.ReactElement {
     setNewTime(event.time ?? '')
     setNewLink(event.link ?? '')
     setIsEventModalOpen(true)
+    setBulkMode('single')
+    setNewDueDateEnd('')
+    setMultipleDates([])
+    setRecurringWeekdays([])
+  }
+
+  function handleAddDateToList(): void {
+    if (newDueDate === '') return
+    if (multipleDates.includes(newDueDate)) return
+    setMultipleDates([...multipleDates, newDueDate].sort())
+    setNewDueDate('')
+  }
+
+  function handleRemoveDateFromList(date: string): void {
+    setMultipleDates(multipleDates.filter((d) => d !== date))
+  }
+
+  function toggleWeekday(day: number): void {
+    setRecurringWeekdays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day].sort()
+    )
   }
 
   function handleAddEvent(): void {
-    if (newTitle.trim() === '' || newDueDate === '') return
+    if (newTitle.trim() === '') return
 
     if (editingEventId) {
+      if (newDueDate === '') return
       // 編集モード：既存の予定を更新
       setEvents(
         events.map((event) =>
@@ -123,8 +161,52 @@ function App(): React.ReactElement {
             : event
         )
       )
+    } else if (bulkMode === 'recurring') {
+      if (newDueDate === '' || recurringWeekdays.length === 0) return
+        const rangeEnd = newDueDateEnd !== '' ? new Date(newDueDateEnd) : addDays(new Date(newDueDate), 180)
+      if (newDueDateEnd !== '' && new Date(newDueDate) > new Date(newDueDateEnd)) return
+
+      const dates = eachDayOfInterval({
+        start: new Date(newDueDate),
+        end: rangeEnd
+      })
+        .filter((d) => recurringWeekdays.includes(d.getDay()))
+        .map((d) => format(d, 'yyyy-MM-dd'))
+
+      const newEvents: CalendarEvent[] = dates.map((dateStr) => ({
+        id: crypto.randomUUID(),
+        title: newTitle,
+        layerId: newEventLayerId,
+        memo: newMemo || undefined,
+        dueDate: dateStr,
+        hasDeadline: newHasDeadline,
+        isAllDay: newIsAllDay,
+        time: newIsAllDay ? undefined : newTime,
+        link: newLink || undefined,
+        status: '未着手'
+      }))
+
+      setEvents([...events, ...newEvents])
+    } else if (bulkMode === 'multiple') {
+      if (multipleDates.length === 0) return
+
+      const newEvents: CalendarEvent[] = multipleDates.map((dateStr) => ({
+        id: crypto.randomUUID(),
+        title: newTitle,
+        layerId: newEventLayerId,
+        memo: newMemo || undefined,
+        dueDate: dateStr,
+        hasDeadline: newHasDeadline,
+        isAllDay: newIsAllDay,
+        time: newIsAllDay ? undefined : newTime,
+        link: newLink || undefined,
+        status: '未着手'
+      }))
+
+      setEvents([...events, ...newEvents])
     } else {
-      // 新規追加モード
+      if (newDueDate === '') return
+      // 通常の単体追加
       const newEvent: CalendarEvent = {
         id: crypto.randomUUID(),
         title: newTitle,
@@ -143,6 +225,10 @@ function App(): React.ReactElement {
     setNewTitle('')
     setNewMemo('')
     setNewDueDate('')
+    setNewDueDateEnd('')
+    setMultipleDates([])
+    setRecurringWeekdays([])
+    setBulkMode('single')
     setNewTime('')
     setNewLink('')
     setEditingEventId(null)
@@ -246,6 +332,9 @@ function App(): React.ReactElement {
             setNewTime('')
             setNewLink('')
             setIsEventModalOpen(true)
+            setBulkMode('single')
+            setNewDueDateEnd('')
+            setMultipleDates([])
           }}
         >
           ＋ 予定を追加
@@ -388,7 +477,43 @@ function App(): React.ReactElement {
       {isEventModalOpen && (
         <div className="modal-overlay" onClick={() => setIsEventModalOpen(false)}>
           <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-            <h2>{editingEventId ? '予定を編集' : '予定を追加'}</h2>
+            <h2>{!editingEventId && (
+              <div style={{ display: 'flex', gap: '10px', fontSize: '13px', marginBottom: '10px' }}>
+                <label>
+                  <input
+                    type="radio"
+                    checked={bulkMode === 'single'}
+                    onChange={() => setBulkMode('single')}
+                  />
+                  単体
+                </label>
+                <label>
+                  <input
+                    type="radio"
+                    checked={bulkMode === 'range'}
+                    onChange={() => setBulkMode('range')}
+                  />
+                  連続した期間
+                </label>
+                <label>
+                  <input
+                    type="radio"
+                    checked={bulkMode === 'multiple'}
+                    onChange={() => setBulkMode('multiple')}
+                  />
+                  複数の個別日付
+                </label>
+                <label>
+                  <input
+                    type="radio"
+                    checked={bulkMode === 'recurring'}
+                    onChange={() => setBulkMode('recurring')}
+                  />
+                  定期（曜日指定）
+                </label>
+              </div>
+            )}
+            </h2>
 
             <div>
               <input
@@ -428,9 +553,77 @@ function App(): React.ReactElement {
               </label>
             </div>
 
-            <div>
-              <input type="date" value={newDueDate} onChange={(e) => setNewDueDate(e.target.value)} />
-            </div>
+            {(bulkMode === 'range' || bulkMode === 'recurring') && !editingEventId ? (
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <input
+                    type="date"
+                    value={newDueDate}
+                    onChange={(e) => setNewDueDate(e.target.value)}
+                  />
+                  <span>〜</span>
+                  <input
+                    type="date"
+                    value={newDueDateEnd}
+                    onChange={(e) => setNewDueDateEnd(e.target.value)}
+                    title="空欄の場合、開始日から半年後まで自動的に作成されます"
+                  />
+                </div>
+
+                {bulkMode === 'recurring' && (
+                  <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
+                    {['日', '月', '火', '水', '木', '金', '土'].map((label, index) => (
+                      <label key={index} style={{ fontSize: '12px' }}>
+                        <input
+                          type="checkbox"
+                          checked={recurringWeekdays.includes(index)}
+                          onChange={() => toggleWeekday(index)}
+                        />
+                        {label}
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : bulkMode === 'multiple' && !editingEventId ? (
+              <div>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <input type="date" value={newDueDate} onChange={(e) => setNewDueDate(e.target.value)} />
+                  <button type="button" className="icon-btn" onClick={handleAddDateToList}>
+                    追加
+                  </button>
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '6px' }}>
+                  {multipleDates.map((date) => (
+                    <span
+                      key={date}
+                      style={{
+                        fontSize: '11px',
+                        background: 'var(--paper-soft)',
+                        border: '1px solid var(--line)',
+                        borderRadius: '10px',
+                        padding: '2px 8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      {date}
+                      <span
+                        style={{ cursor: 'pointer' }}
+                        onClick={() => handleRemoveDateFromList(date)}
+                      >
+                        ×
+                      </span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div>
+                <input type="date" value={newDueDate} onChange={(e) => setNewDueDate(e.target.value)} />
+              </div>
+            )}
 
             <div>
               <label>
