@@ -43,6 +43,10 @@ function App(): React.ReactElement {
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
   const [selectedDayDate, setSelectedDayDate] = useState<string | null>(null)
 
+  const now = new Date()
+  const [viewYear, setViewYear] = useState(now.getFullYear())
+  const [viewMonth, setViewMonth] = useState(now.getMonth())
+
   // ↓ここに追加
   useEffect(() => {
     window.api.loadData().then((saved) => {
@@ -73,6 +77,30 @@ function App(): React.ReactElement {
     const due = new Date(event.dueDate)
     return isWithinInterval(due, { start: today, end: oneWeekLater })
   })
+
+  function handlePrevMonth(): void {
+    if (viewMonth === 0) {
+      setViewYear(viewYear - 1)
+      setViewMonth(11)
+    } else {
+      setViewMonth(viewMonth - 1)
+    }
+  }
+
+  function handleNextMonth(): void {
+    if (viewMonth === 11) {
+      setViewYear(viewYear + 1)
+      setViewMonth(0)
+    } else {
+      setViewMonth(viewMonth + 1)
+    }
+  }
+
+  function handleGoToToday(): void {
+    const today = new Date()
+    setViewYear(today.getFullYear())
+    setViewMonth(today.getMonth())
+  }
 
   function handleAddLayer(): void {
     if (newLayerName.trim() === '') return
@@ -375,16 +403,33 @@ function App(): React.ReactElement {
         </ul>
       </div>
 
-      <div style={{ gridArea: 'calendar', overflowY: 'auto' }}>
-        <CalendarGrid
-          year={2026}
-          month={7}
-          events={filteredEvents}
-          layers={layers}
-          onDateDoubleClick={handleDateDoubleClick}
-          onDateClick={handleDateClick}
-          onEventClick={(event) => setSelectedEventId(event.id)}
-        />
+      <div style={{ gridArea: 'calendar', height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+          <button className="icon-btn is-square" onClick={handlePrevMonth}>
+            ‹
+          </button>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', minWidth: '90px' }}>
+            {viewYear}年{viewMonth + 1}月
+          </span>
+          <button className="icon-btn is-square" onClick={handleNextMonth}>
+            ›
+          </button>
+          <button className="icon-btn" onClick={handleGoToToday}>
+            今日
+          </button>
+        </div>
+
+        <div style={{ flex: 1, minHeight: 0 }}>
+          <CalendarGrid
+            year={viewYear}
+            month={viewMonth}
+            events={filteredEvents}
+            layers={layers}
+            onDateDoubleClick={handleDateDoubleClick}
+            onDateClick={handleDateClick}
+            onEventClick={(event) => setSelectedEventId(event.id)}
+          />
+        </div>
       </div>
       <div
         style={{

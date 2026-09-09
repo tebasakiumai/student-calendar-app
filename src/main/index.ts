@@ -5,6 +5,8 @@ import icon from '../../resources/icon.png?asset'
 import Store from 'electron-store'
 import { autoUpdater } from 'electron-updater'
 
+autoUpdater.logger = console
+
 function createWindow(): void {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
@@ -57,6 +59,18 @@ app.whenReady().then(() => {
   ipcMain.on('ping', () => console.log('pong'))
 
   createWindow()
+  autoUpdater.on('error', (error) => {
+    console.error('update error:', error)
+  })
+  autoUpdater.on('checking-for-update', () => {
+    console.log('checking for update...')
+  })
+  autoUpdater.on('update-available', (info) => {
+    console.log('update available:', info)
+  })
+  autoUpdater.on('update-not-available', (info) => {
+    console.log('update not available:', info)
+  })
   autoUpdater.checkForUpdatesAndNotify()
 
   app.on('activate', function () {
