@@ -7,9 +7,10 @@ import { autoUpdater } from 'electron-updater'
 
 autoUpdater.logger = console
 
+let mainWindow: BrowserWindow | null = null
 function createWindow(): void {
   // Create the browser window.
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 900,
     height: 670,
     minWidth: 900,       // ← 追加
@@ -100,4 +101,51 @@ ipcMain.handle('load-data', () => {
 
 ipcMain.handle('save-data', (_event, data) => {
   store.set('appData', data)
+})
+
+// ===== 自動更新 =====
+autoUpdater.autoDownload = false // ユーザーが押すまでダウンロードしない
+autoUpdater.logger = console
+
+function sendUpdateStatus(status: unknown): void {
+  mainWindow?.webContents.send('update-status', status)
+}
+
+autoUpdater.on('checking-for-update', () => {
+  sendUpdateStatus({ state: 'checking' })
+})
+autoUpdater.on('update-available', (info) => {
+  sendUpdateStatus({ state: 'available', version: info.version })
+})
+autoUpdater.on('update-not-available', () => {
+  sendUpdateStatus({ state: 'not-available' })
+})
+autoUpdater.on('download-progress', (progress) => {
+  sendUpdateStatus({ state: 'downloading', percent: Math.round(progress.percent) })
+})
+autoUpdater.on('update-downloaded', (info) => {
+  sendUpdateStatus({ state: 'downloaded', version: info.version })
+})
+autoUpdater.on('error', (error) => {
+  sendUpdateStatus({ state: 'error', message: error.message })
+})
+
+ipcMain.handle('check-for-update', () => {
+  if (!app.isPackaged) {
+    sendUpdateStatus({ state: 'dev-mode' })
+    return
+  }
+  return autoUpdater.checkForUpdates()
+})
+
+ipcMain.handle('download-update', () => {
+  return autoUpdater.downloadUpdate()
+})
+
+ipcMain.handle('install-update', () => {
+  autoUpdater.quitAndInstall()
+})
+
+ipcMain.handle('get-app-version', () => {
+  return app.getVersion()
 })

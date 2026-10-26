@@ -350,3 +350,19 @@
   text-overflow: ellipsis;
   cursor: pointer;
 }
+.update-banner {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--indigo);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  box-shadow: 0 2px 8px rgba(38, 38, 36, 0.12);
+  z-index: 10;
+}

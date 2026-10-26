@@ -109,7 +109,15 @@ export function DayView({ date, events, layers, onEventClick }: DayViewProps): R
             {timedEvents.map((event) => {
                 const [h, m] = (event.time ?? '0:0').split(':').map(Number)
                 const startRatio = (h + m / 60) / totalHours
-                const widthRatio = 1 / totalHours / 2 // 30分幅
+
+                let widthRatio = 1 / totalHours / 2 // 終了時刻がなければ30分幅
+                if (event.endTime) {
+                  const [eh, em] = event.endTime.split(':').map(Number)
+                  const durationHours = eh + em / 60 - (h + m / 60)
+                  if (durationHours > 0) {
+                    widthRatio = durationHours / totalHours
+                  }
+                }
 
                 return (
                     <div
@@ -127,7 +135,8 @@ export function DayView({ date, events, layers, onEventClick }: DayViewProps): R
                         backgroundColor: getLayerColor(event.layerId, layers)
                     }}
                     >
-                    {event.title}
+                    {event.time}
+                    {event.endTime ? `〜${event.endTime}` : ''} {event.title}
                     </div>
                 )
                 })}

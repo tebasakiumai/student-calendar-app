@@ -29,6 +29,7 @@ function App(): React.ReactElement {
   const [newHasDeadline, setNewHasDeadline] = useState(true)
   const [newIsAllDay, setNewIsAllDay] = useState(true)
   const [newTime, setNewTime] = useState('')
+  const [newEndTime, setNewEndTime] = useState('')
   const [newLink, setNewLink] = useState('')
 
   const [bulkMode, setBulkMode] = useState<'single' | 'range' | 'multiple' | 'recurring'>('single')
@@ -47,16 +48,30 @@ function App(): React.ReactElement {
   const [viewYear, setViewYear] = useState(now.getFullYear())
   const [viewMonth, setViewMonth] = useState(now.getMonth())
 
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatus>({ state: 'idle' })
+  const [appVersion, setAppVersion] = useState('')
+
+  type UpdateStatus =
+  | { state: 'idle' }
+  | { state: 'checking' }
+  | { state: 'available'; version: string }
+  | { state: 'not-available' }
+  | { state: 'downloading'; percent: number }
+  | { state: 'downloaded'; version: string }
+  | { state: 'error'; message: string }
+  | { state: 'dev-mode' }
+
   // ↓ここに追加
   useEffect(() => {
-    window.api.loadData().then((saved) => {
-      if (saved) {
-        const data = saved as { layers: Layer[]; events: CalendarEvent[] }
-        setLayers(data.layers)
-        setEvents(data.events)
-      }
-      setIsLoaded(true)
+    window.api.getAppVersion().then(setAppVersion)
+
+    const unsubscribe = window.api.onUpdateStatus((status) => {
+      setUpdateStatus(status as UpdateStatus)
     })
+
+    window.api.checkForUpdate() // 起動時に1回だけ確認
+
+    return unsubscribe
   }, [])
   // ↑ここまで
 
@@ -113,6 +128,7 @@ function App(): React.ReactElement {
 
     setLayers([...layers, newLayer])
     setNewLayerName('')
+    setNewEndTime('')
   }
 
   function handleDateDoubleClick(dateStr: string): void {
@@ -124,6 +140,7 @@ function App(): React.ReactElement {
     setNewHasDeadline(true)
     setNewIsAllDay(true)
     setNewTime('')
+    setNewEndTime('')
     setNewLink('')
     setIsEventModalOpen(true)
     setBulkMode('single')
@@ -141,6 +158,7 @@ function App(): React.ReactElement {
     setNewHasDeadline(event.hasDeadline)
     setNewIsAllDay(event.isAllDay)
     setNewTime(event.time ?? '')
+    setNewEndTime(event.endTime ?? '')
     setNewLink(event.link ?? '')
     setIsEventModalOpen(true)
     setBulkMode('single')
@@ -168,6 +186,10 @@ function App(): React.ReactElement {
 
   function handleAddEvent(): void {
     if (newTitle.trim() === '') return
+    if (!newIsAllDay && newTime && newEndTime && newEndTime <= newTime) {
+      window.alert('終了時刻は開始時刻より後にしてください')
+      return
+    }
 
     if (editingEventId) {
       if (newDueDate === '') return
@@ -184,6 +206,7 @@ function App(): React.ReactElement {
                 hasDeadline: newHasDeadline,
                 isAllDay: newIsAllDay,
                 time: newIsAllDay ? undefined : newTime,
+                endTime: newIsAllDay ? undefined : newEndTime || undefined,
                 link: newLink || undefined
               }
             : event
@@ -210,6 +233,7 @@ function App(): React.ReactElement {
         hasDeadline: newHasDeadline,
         isAllDay: newIsAllDay,
         time: newIsAllDay ? undefined : newTime,
+        endTime: newIsAllDay ? undefined : newEndTime || undefined,
         link: newLink || undefined,
         status: '未着手'
       }))
@@ -227,6 +251,7 @@ function App(): React.ReactElement {
         hasDeadline: newHasDeadline,
         isAllDay: newIsAllDay,
         time: newIsAllDay ? undefined : newTime,
+        endTime: newIsAllDay ? undefined : newEndTime || undefined,
         link: newLink || undefined,
         status: '未着手'
       }))
@@ -244,6 +269,7 @@ function App(): React.ReactElement {
         hasDeadline: newHasDeadline,
         isAllDay: newIsAllDay,
         time: newIsAllDay ? undefined : newTime,
+        endTime: newIsAllDay ? undefined : newEndTime || undefined,
         link: newLink || undefined,
         status: '未着手'
       }
@@ -258,6 +284,7 @@ function App(): React.ReactElement {
     setRecurringWeekdays([])
     setBulkMode('single')
     setNewTime('')
+    setNewEndTime('')
     setNewLink('')
     setEditingEventId(null)
     setIsEventModalOpen(false)
@@ -345,6 +372,21 @@ function App(): React.ReactElement {
           <button className="icon-btn is-square" onClick={() => setIsLayerModalOpen(true)}>
             ⚙
           </button>
+          <button className="icon-btn" onClick={() => window.api.checkForUpdate()}>
+            更新を確認
+          </button>
+          {updateStatus.state === 'checking' && (
+            <span style={{ fontSize: '11px', color: 'var(--ink-sub)' }}>確認中…</span>
+          )}
+          {updateStatus.state === 'not-available' && (
+            <span style={{ fontSize: '11px', color: 'var(--ink-sub)' }}>最新です (v{appVersion})</span>
+          )}
+          {updateStatus.state === 'dev-mode' && (
+            <span style={{ fontSize: '11px', color: 'var(--ink-sub)' }}>開発中は更新できません</span>
+          )}
+          {updateStatus.state === 'error' && (
+            <span style={{ fontSize: '11px', color: 'var(--alert)' }}>確認に失敗しました</span>
+          )}
         </div>
 
         <button
@@ -358,6 +400,7 @@ function App(): React.ReactElement {
             setNewHasDeadline(true)
             setNewIsAllDay(true)
             setNewTime('')
+            setNewEndTime('')
             setNewLink('')
             setIsEventModalOpen(true)
             setBulkMode('single')
@@ -391,7 +434,7 @@ function App(): React.ReactElement {
                 <div className="deadline-meta">
                   <span className="deadline-date">
                     {event.dueDate}
-                    {event.isAllDay ? '' : ` ${event.time}`}
+                    {event.isAllDay ? '' : ` ${event.time}${event.endTime ? `〜${event.endTime}` : ''}`}
                   </span>
                   <span className={`deadline-countdown${isUrgent ? ' is-urgent' : ''}`}>
                     {countdownText}
@@ -473,7 +516,9 @@ function App(): React.ReactElement {
 
               <p className="detail-meta">
                 {selectedEvent.hasDeadline ? '期限' : '日付'}: {selectedEvent.dueDate}
-                {selectedEvent.isAllDay ? '（終日）' : ` ${selectedEvent.time}`}
+                {selectedEvent.isAllDay
+                  ? '（終日）'
+                  : ` ${selectedEvent.time}${selectedEvent.endTime ? `〜${selectedEvent.endTime}` : ''}`}
               </p>
 
               {selectedEvent.memo && <p className="detail-memo">{selectedEvent.memo}</p>}
@@ -518,6 +563,32 @@ function App(): React.ReactElement {
           )
         })()}
       </div>
+
+      {(updateStatus.state === 'available' ||
+        updateStatus.state === 'downloading' ||
+        updateStatus.state === 'downloaded') && (
+        <div className="update-banner">
+          {updateStatus.state === 'available' && (
+            <>
+              <span>新しいバージョン v{updateStatus.version} があります</span>
+              <button className="primary-btn" onClick={() => window.api.downloadUpdate()}>
+                ダウンロード
+              </button>
+            </>
+          )}
+          {updateStatus.state === 'downloading' && (
+            <span>ダウンロード中… {updateStatus.percent}%</span>
+          )}
+          {updateStatus.state === 'downloaded' && (
+            <>
+              <span>v{updateStatus.version} の準備ができました</span>
+              <button className="primary-btn" onClick={() => window.api.installUpdate()}>
+                再起動して更新
+              </button>
+            </>
+          )}
+        </div>
+      )}
 
       {isEventModalOpen && (
         <div className="modal-overlay" onClick={() => setIsEventModalOpen(false)}>
@@ -680,7 +751,16 @@ function App(): React.ReactElement {
                 終日
               </label>
               {!newIsAllDay && (
-                <input type="time" value={newTime} onChange={(e) => setNewTime(e.target.value)} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
+                  <input type="time" value={newTime} onChange={(e) => setNewTime(e.target.value)} />
+                  <span>〜</span>
+                  <input
+                    type="time"
+                    value={newEndTime}
+                    onChange={(e) => setNewEndTime(e.target.value)}
+                    title="空欄の場合、開始時刻のみの予定になります"
+                  />
+                </div>
               )}
             </div>
 

@@ -13,6 +13,7 @@ export interface CalendarEvent {
   hasDeadline: boolean // 期限付きかどうか
   isAllDay: boolean // 終日 or 時間指定
   time?: string // isAllDayがfalseの時だけ使う（例: "14:00"）
+  endTime?: string // 終了時刻
   link?: string // 提出先リンク
   status: '未着手' | '進行中' | '完了'
 }

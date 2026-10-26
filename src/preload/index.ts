@@ -5,7 +5,16 @@ import { electronAPI } from '@electron-toolkit/preload'
 // Custom APIs for renderer
 const api = {
   loadData: () => ipcRenderer.invoke('load-data'),
-  saveData: (data: unknown) => ipcRenderer.invoke('save-data', data)
+  saveData: (data: unknown) => ipcRenderer.invoke('save-data', data),
+  checkForUpdate: () => ipcRenderer.invoke('check-for-update'),
+  downloadUpdate: () => ipcRenderer.invoke('download-update'),
+  installUpdate: () => ipcRenderer.invoke('install-update'),
+  getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+  onUpdateStatus: (callback: (status: unknown) => void) => {
+    const listener = (_event: unknown, status: unknown): void => callback(status)
+    ipcRenderer.on('update-status', listener)
+    return () => ipcRenderer.removeListener('update-status', listener)
+  }
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to
