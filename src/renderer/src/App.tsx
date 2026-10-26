@@ -62,6 +62,25 @@ function App(): React.ReactElement {
   | { state: 'dev-mode' }
 
   // ↓ここに追加
+  // ① 起動時にデータを読み込む（← これが消えている可能性が高い）
+  useEffect(() => {
+    window.api.loadData().then((saved) => {
+      if (saved) {
+        const data = saved as { layers: Layer[]; events: CalendarEvent[] }
+        setLayers(data.layers)
+        setEvents(data.events)
+      }
+      setIsLoaded(true)
+    })
+  }, [])
+
+  // ② 変更のたびに保存する
+  useEffect(() => {
+    if (!isLoaded) return
+    window.api.saveData({ layers, events })
+  }, [layers, events, isLoaded])
+
+  // ③ 更新の確認（今回追加した分）
   useEffect(() => {
     window.api.getAppVersion().then(setAppVersion)
 
@@ -69,16 +88,10 @@ function App(): React.ReactElement {
       setUpdateStatus(status as UpdateStatus)
     })
 
-    window.api.checkForUpdate() // 起動時に1回だけ確認
+    window.api.checkForUpdate()
 
     return unsubscribe
   }, [])
-  // ↑ここまで
-
-  useEffect(() => {
-    if (!isLoaded) return
-    window.api.saveData({ layers, events })
-  }, [layers, events, isLoaded])
 
   const filteredEvents =
   selectedLayerId === 'all'
