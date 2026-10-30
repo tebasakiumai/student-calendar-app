@@ -70,7 +70,9 @@ export function CalendarGrid({
         {days.map((date) => {
           const isCurrentMonth = date.getMonth() === month
           const dateStr = formatDate(date)
-          const eventsOnThisDay = events.filter((event) => event.dueDate === dateStr)
+          const eventsOnThisDay = events.filter(
+            (event) => event.dueDate <= dateStr && dateStr <= (event.endDate ?? event.dueDate)
+          )
 
           return (
             <div

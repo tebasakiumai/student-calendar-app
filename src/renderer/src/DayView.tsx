@@ -54,7 +54,9 @@ export function DayView({ date, events, layers, onEventClick }: DayViewProps): R
     )
   }
 
-  const eventsOnThisDay = events.filter((event) => event.dueDate === date)
+  const eventsOnThisDay = events.filter(
+    (event) => event.dueDate <= date && date <= (event.endDate ?? event.dueDate)
+  )
   const allDayEvents = eventsOnThisDay.filter((event) => event.isAllDay)
   const timedEvents = eventsOnThisDay.filter((event) => !event.isAllDay && event.time)
 
@@ -108,16 +110,33 @@ export function DayView({ date, events, layers, onEventClick }: DayViewProps): R
 
             {timedEvents.map((event) => {
                 const [h, m] = (event.time ?? '0:0').split(':').map(Number)
-                const startRatio = (h + m / 60) / totalHours
+                const lastDate = event.endDate ?? event.dueDate
+                const isMultiDay = lastDate > event.dueDate
 
-                let widthRatio = 1 / totalHours / 2 // 終了時刻がなければ30分幅
+                let startHour = h + m / 60
+                let endHourValue = startHour + 0.5 // 終了時刻なしなら30分幅
+
                 if (event.endTime) {
                   const [eh, em] = event.endTime.split(':').map(Number)
-                  const durationHours = eh + em / 60 - (h + m / 60)
-                  if (durationHours > 0) {
-                    widthRatio = durationHours / totalHours
-                  }
+                  endHourValue = eh + em / 60
                 }
+
+                if (isMultiDay) {
+                  if (date === event.dueDate) {
+                    endHourValue = 24 // 開始日：開始時刻〜24時
+                  } else if (date === lastDate) {
+                    startHour = 0 // 最終日：0時〜終了時刻
+                    if (!event.endTime) endHourValue = 24
+                  } else {
+                    startHour = 0 // 途中の日：0時〜24時
+                    endHourValue = 24
+                  }
+                } else if (endHourValue <= startHour) {
+                  endHourValue = startHour + 0.5
+                }
+
+                const startRatio = startHour / totalHours
+                const widthRatio = Math.max((endHourValue - startHour) / totalHours, 0.5 / totalHours)
 
                 return (
                     <div

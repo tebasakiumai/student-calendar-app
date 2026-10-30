@@ -10,6 +10,7 @@ export interface CalendarEvent {
   layerId: string // Layerのidを参照
   memo?: string
   dueDate: string // 期限日（例: "2026-08-10"）
+  endDate?: string // 終了日
   hasDeadline: boolean // 期限付きかどうか
   isAllDay: boolean // 終日 or 時間指定
   time?: string // isAllDayがfalseの時だけ使う（例: "14:00"）

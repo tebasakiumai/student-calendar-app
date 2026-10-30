@@ -15,6 +15,10 @@ const dummyEvents: CalendarEvent[] = []
 
 const colorPalette = ['#7F77DD', '#1D9E75', '#E07A4E', '#D65C7D', '#3B8FD6', '#C9A227']
 
+function getEffectiveEndDate(event: CalendarEvent): string {
+  return event.endDate && event.endDate >= event.dueDate ? event.endDate : event.dueDate
+}
+
 function App(): React.ReactElement {
   const [layers, setLayers] = useState<Layer[]>(defaultLayers)
   const [events, setEvents] = useState<CalendarEvent[]>(dummyEvents)
@@ -30,6 +34,7 @@ function App(): React.ReactElement {
   const [newIsAllDay, setNewIsAllDay] = useState(true)
   const [newTime, setNewTime] = useState('')
   const [newEndTime, setNewEndTime] = useState('')
+  const [newEventEndDate, setNewEventEndDate] = useState('')
   const [newLink, setNewLink] = useState('')
 
   const [bulkMode, setBulkMode] = useState<'single' | 'range' | 'multiple' | 'recurring'>('single')
@@ -102,7 +107,7 @@ function App(): React.ReactElement {
   const oneWeekLater = addDays(today, 7)
 
   const weeklyDeadlines = filteredEvents.filter((event) => {
-    const due = new Date(event.dueDate)
+    const due = new Date(getEffectiveEndDate(event))
     return isWithinInterval(due, { start: today, end: oneWeekLater })
   })
 
@@ -142,6 +147,7 @@ function App(): React.ReactElement {
     setLayers([...layers, newLayer])
     setNewLayerName('')
     setNewEndTime('')
+    setNewEventEndDate('')
   }
 
   function handleDateDoubleClick(dateStr: string): void {
@@ -154,6 +160,7 @@ function App(): React.ReactElement {
     setNewIsAllDay(true)
     setNewTime('')
     setNewEndTime('')
+    setNewEventEndDate('')
     setNewLink('')
     setIsEventModalOpen(true)
     setBulkMode('single')
@@ -172,6 +179,7 @@ function App(): React.ReactElement {
     setNewIsAllDay(event.isAllDay)
     setNewTime(event.time ?? '')
     setNewEndTime(event.endTime ?? '')
+    setNewEventEndDate(event.endDate ?? '')
     setNewLink(event.link ?? '')
     setIsEventModalOpen(true)
     setBulkMode('single')
@@ -199,7 +207,13 @@ function App(): React.ReactElement {
 
   function handleAddEvent(): void {
     if (newTitle.trim() === '') return
-    if (!newIsAllDay && newTime && newEndTime && newEndTime <= newTime) {
+    if (newEventEndDate && newDueDate && newEventEndDate < newDueDate) {
+      window.alert('終了日は開始日より後にしてください')
+      return
+    }
+
+    const isSameDay = !newEventEndDate || newEventEndDate === newDueDate
+    if (!newIsAllDay && newTime && newEndTime && isSameDay && newEndTime <= newTime) {
       window.alert('終了時刻は開始時刻より後にしてください')
       return
     }
@@ -219,6 +233,7 @@ function App(): React.ReactElement {
                 hasDeadline: newHasDeadline,
                 isAllDay: newIsAllDay,
                 time: newIsAllDay ? undefined : newTime,
+                endDate: newEventEndDate && newEventEndDate > newDueDate ? newEventEndDate : undefined,
                 endTime: newIsAllDay ? undefined : newEndTime || undefined,
                 link: newLink || undefined
               }
@@ -282,6 +297,7 @@ function App(): React.ReactElement {
         hasDeadline: newHasDeadline,
         isAllDay: newIsAllDay,
         time: newIsAllDay ? undefined : newTime,
+        endDate: newEventEndDate && newEventEndDate > newDueDate ? newEventEndDate : undefined,
         endTime: newIsAllDay ? undefined : newEndTime || undefined,
         link: newLink || undefined,
         status: '未着手'
@@ -298,6 +314,7 @@ function App(): React.ReactElement {
     setBulkMode('single')
     setNewTime('')
     setNewEndTime('')
+    setNewEventEndDate('')
     setNewLink('')
     setEditingEventId(null)
     setIsEventModalOpen(false)
@@ -414,6 +431,7 @@ function App(): React.ReactElement {
             setNewIsAllDay(true)
             setNewTime('')
             setNewEndTime('')
+            setNewEventEndDate('')
             setNewLink('')
             setIsEventModalOpen(true)
             setBulkMode('single')
@@ -429,7 +447,7 @@ function App(): React.ReactElement {
         <p className="panel-title">今週の締め切り</p>
         <ul>
           {weeklyDeadlines.map((event) => {
-            const daysLeft = differenceInCalendarDays(new Date(event.dueDate), startOfToday())
+            const daysLeft = differenceInCalendarDays(new Date(getEffectiveEndDate(event)), startOfToday())
             const isUrgent = daysLeft <= 2
             const countdownText =
               daysLeft < 0 ? '期限超過' : daysLeft === 0 ? '今日' : `あと${daysLeft}日`
@@ -447,6 +465,7 @@ function App(): React.ReactElement {
                 <div className="deadline-meta">
                   <span className="deadline-date">
                     {event.dueDate}
+                    {event.endDate && event.endDate > event.dueDate ? `〜${event.endDate}` : ''}
                     {event.isAllDay ? '' : ` ${event.time}${event.endTime ? `〜${event.endTime}` : ''}`}
                   </span>
                   <span className={`deadline-countdown${isUrgent ? ' is-urgent' : ''}`}>
@@ -529,6 +548,9 @@ function App(): React.ReactElement {
 
               <p className="detail-meta">
                 {selectedEvent.hasDeadline ? '期限' : '日付'}: {selectedEvent.dueDate}
+                {selectedEvent.endDate && selectedEvent.endDate > selectedEvent.dueDate
+                  ? ` 〜 ${selectedEvent.endDate}`
+                  : ''}
                 {selectedEvent.isAllDay
                   ? '（終日）'
                   : ` ${selectedEvent.time}${selectedEvent.endTime ? `〜${selectedEvent.endTime}` : ''}`}
@@ -749,8 +771,16 @@ function App(): React.ReactElement {
                 </div>
               </div>
             ) : (
-              <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <input type="date" value={newDueDate} onChange={(e) => setNewDueDate(e.target.value)} />
+                <span>〜</span>
+                <input
+                  type="date"
+                  value={newEventEndDate}
+                  min={newDueDate || undefined}
+                  onChange={(e) => setNewEventEndDate(e.target.value)}
+                  title="空欄の場合、1日だけの予定になります"
+                />
               </div>
             )}
 
